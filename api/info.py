@@ -34,6 +34,10 @@ class handler(BaseHTTPRequestHandler):
                 
                 formats = []
                 for f in info.get('formats', []):
+                    # Filter out streaming manifests which are just text files
+                    if f.get('protocol') in ['m3u8', 'm3u8_native', 'f4m_native', 'http_dash_segments']:
+                        continue
+                        
                     if f.get('url') and (f.get('vcodec') != 'none' or f.get('acodec') != 'none'):
                         formats.append({
                             "formatId": f.get('format_id'),

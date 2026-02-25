@@ -19,7 +19,10 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             # We stream the request to the target URL
-            resp = requests.get(url, stream=True, timeout=10)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+            resp = requests.get(url, stream=True, timeout=15, headers=headers)
             
             self.send_response(200)
             # Filter and pass along relevant headers
