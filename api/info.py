@@ -43,10 +43,11 @@ class handler(BaseHTTPRequestHandler):
                     
                     if 'm3u8' in protocol or 'm3u8' in url_val or 'dash' in protocol or 'dash' in url_val:
                         # Special case for Pinterest: attempt to find direct MP4 from HLS URL
-                        if 'pinimg.com' in url_val and '.m3u8' in url_val:
-                            # Try to convert: /hls/.../_v2_720w.m3u8 -> /720p/...mp4
-                            # This is a common pattern for Pinterest
-                            potential_mp4 = url_val.replace('/hls/', '/720p/').replace('_v2_720w.m3u8', '.mp4').replace('_v2.m3u8', '.mp4')
+                        if 'pinimg.com' in url_val and ('.m3u8' in url_val or '/hls/' in url_val):
+                            # Correct pattern found via research: 
+                            # /hls/.../_v2.m3u8 -> /expMp4/..._720w.mp4
+                            # We extract the ID part which is between /hls/ and the filename
+                            potential_mp4 = url_val.replace('/hls/', '/expMp4/').replace('_v2.m3u8', '_720w.mp4').replace('_v2_720w.m3u8', '_720w.mp4')
                             if potential_mp4 not in [fmt['url'] for fmt in formats]:
                                 formats.append({
                                     "formatId": f.get('format_id') + "-mp4-fixed",
