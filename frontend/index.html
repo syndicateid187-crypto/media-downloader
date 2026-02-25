@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Media Downloader</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Downloader</h1>
+        <p class="subtitle">Extract media from YouTube and dozens of other sites instantly.</p>
+
+        <div class="input-group">
+            <input type="text" id="url" placeholder="Paste media URL here (YouTube, etc.)">
+            <button onclick="downloadMedia()" id="process-btn">Process</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 1rem; color: var(--text-muted);">Fetching media info...</p>
+        </div>
+
+        <div id="result-container">
+            <img id="thumbnail" src="" alt="Thumbnail">
+            <div class="info">
+                <div class="title" id="res-title"></div>
+                <div class="meta" id="res-meta">
+                    <span id="res-type"></span> | <span id="res-format-display"></span>
+                </div>
+
+                <div class="quality-selector">
+                    <label for="format-select">Select Quality / Format:</label>
+                    <select id="format-select" onchange="updateDownloadLink()"></select>
+                </div>
+
+                <!-- AI Enhancement Toggle -->
+                <div class="enhance-container">
+                    <div class="enhance-info">
+                        <h4>AI Upscale & Enhance <span class="ai-badge">Pro</span></h4>
+                        <p>Upscale to 8K & improve visual clarity</p>
+                        <div id="ai-status" class="ai-status">AI Processing: Simulating 8K Optimization...</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="ai-toggle" onchange="toggleEnhancement()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <a href="" id="download-btn" class="download-link" target="_blank">Download Now</a>
+
+            </div>
+        </div>
+
+        <p id="error-msg" style="color: #ef4444; margin-top: 2rem; display: none;"></p>
+    </div>
+
+    <script>
+        let currentFormats = [];
+        let currentOriginalUrl = "";
+
+        function updateDownloadLink() {
+            const select = document.getElementById("format-select");
+            const downloadBtn = document.getElementById("download-btn");
+            const resTitle = document.getElementById("res-title").innerText;
+            const selectedFormat = select.options[select.selectedIndex];
+
+            const formatId = selectedFormat.getAttribute('data-format-id');
+            const ext = selectedFormat.innerText.match(/\[(.*?)\]/)?.[1] || 'mp4';
+            const filename = `${resTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${ext}`;
+
+            // Route through our proxy to handle redirection/download
+            downloadBtn.href = `/api/proxy-download?url=${encodeURIComponent(currentOriginalUrl)}&formatId=${formatId}&filename=${encodeURIComponent(filename)}`;
+        }
+
+        async function downloadMedia() {
+            const urlInput = document.getElementById("url");
+            const processBtn = document.getElementById("process-btn");
+            const resultContainer = document.getElementById("result-container");
+            const loading = document.getElementById("loading");
+            const errorMsg = document.getElementById("error-msg");
+            const formatSelect = document.getElementById("format-select");
+
+            const url = urlInput.value.trim();
+            if (!url) return;
+
+            // Reset UI
+            resultContainer.style.display = "none";
+            errorMsg.style.display = "none";
+            loading.style.display = "block";
+            processBtn.disabled = true;
+            formatSelect.innerHTML = "";
+
+            try {
+                const response = await fetch("/api/download", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById("thumbnail").src = data.thumbnail || "https://via.placeholder.com/600x337?text=No+Thumbnail";
+                    document.getElementById("res-title").innerText = data.title;
+                    document.getElementById("res-type").innerText = data.type.toUpperCase();
+
+                    currentFormats = data.formats;
+                    currentOriginalUrl = data.originalUrl || url;
+
+                    if (currentFormats && currentFormats.length > 0) {
+                        currentFormats.forEach(f => {
+                            const option = document.createElement("option");
+                            option.value = f.url;
+                            option.setAttribute('data-format-id', f.formatId);
+                            const sizeText = f.filesize ? ` (${(f.filesize / (1024 * 1024)).toFixed(1)} MB)` : "";
+                            const note = f.note ? ` - ${f.note}` : "";
+
+                            // Highlighting 8K or 4K
+                            let label = f.resolution;
+                            if (f.resolution.includes('4320') || f.width >= 7680) label += " [8K ULTRA]";
+                            else if (f.resolution.includes('2160') || f.width >= 3840) label += " [4K PRO]";
+
+                            option.innerText = `${label} [${f.ext}]${note}${sizeText}`;
+                            formatSelect.appendChild(option);
+                        });
+
+                        document.getElementById("res-format-display").innerText = "Multiple Qualities Available";
+                        updateDownloadLink();
+                    } else {
+                        document.getElementById("res-format-display").innerText = "Default Quality";
+                    }
+
+                    // Reset AI toggle on new search
+                    document.getElementById("ai-toggle").checked = false;
+                    toggleEnhancement();
+
+                    resultContainer.style.display = "block";
+                    resultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    errorMsg.innerText = data.error || "Failed to process URL";
+                    errorMsg.style.display = "block";
+                }
+            } catch (err) {
+                console.error(err);
+                errorMsg.innerText = "Connection error. Make sure the backend is running.";
+                errorMsg.style.display = "block";
+            } finally {
+                loading.style.display = "none";
+                processBtn.disabled = false;
+            }
+        }
+
+        function toggleEnhancement() {
+            const isEnabled = document.getElementById("ai-toggle").checked;
+            const thumbnail = document.getElementById("thumbnail");
+            const aiStatus = document.getElementById("ai-status");
+            const resType = document.getElementById("res-type");
+
+            if (isEnabled) {
+                thumbnail.classList.add("enhanced-preview");
+                aiStatus.style.display = "block";
+                if (!resType.innerText.includes("(ENHANCED)")) {
+                    resType.innerText += " (ENHANCED)";
+                }
+                console.log("AI Upscale Activated: Simulating 8K clusters...");
+            } else {
+                thumbnail.classList.remove("enhanced-preview");
+                aiStatus.style.display = "none";
+                resType.innerText = resType.innerText.replace(" (ENHANCED)", "");
+            }
+        }
+    </script>
+</body>
+
+</html>

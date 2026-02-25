@@ -1,0 +1,10 @@
+.vercel
+node_modules/
+*.log
+tunnel.txt
+backend/node_modules/
+backend/stderr.log
+backend/tunnel.log
+backend/tunnel.txt
+__pycache__/
+.env
