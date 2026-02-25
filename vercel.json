@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "name": "universal-media-downloader",
+    "name": "media-downloader-syndicate-187",
     "rewrites": [
         {
             "source": "/api/download",
