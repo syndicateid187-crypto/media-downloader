@@ -73,6 +73,7 @@
 
             // Route through our proxy to handle redirection/download
             downloadBtn.href = `/api/proxy-download?url=${encodeURIComponent(selectedFormat.value)}&filename=${encodeURIComponent(filename)}`;
+            downloadBtn.setAttribute('download', filename);
         }
 
         async function downloadMedia() {
