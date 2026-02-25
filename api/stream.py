@@ -16,8 +16,9 @@ class handler(BaseHTTPRequestHandler):
             return
 
         # For Vercel, we will redirect to the actual media URL to avoid timeout/size limits in serverless
-        # Most modern browsers handle the download/redirect well.
+        # We set Content-Disposition to encourage browsers to download the file
         self.send_response(302)
         self.send_header('Location', url)
+        self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()

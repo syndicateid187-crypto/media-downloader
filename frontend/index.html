@@ -72,7 +72,7 @@
             const filename = `${resTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${ext}`;
 
             // Route through our proxy to handle redirection/download
-            downloadBtn.href = `/api/proxy-download?url=${encodeURIComponent(currentOriginalUrl)}&formatId=${formatId}&filename=${encodeURIComponent(filename)}`;
+            downloadBtn.href = `/api/proxy-download?url=${encodeURIComponent(selectedFormat.value)}&filename=${encodeURIComponent(filename)}`;
         }
 
         async function downloadMedia() {
